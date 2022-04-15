@@ -1,3 +1,5 @@
+# CSV converter and establishes statistics for each file
+
 import os
 import glob
 import numpy as np
@@ -122,52 +124,25 @@ for path in pathYM:
 		statWriter.writerow(['Players > 2100 (Inactive)',dg.loc[(dg['Grade']>2100) & (dg['Flag']=='i')].shape[0]])
 		statWriter.writerow(['Players > 2100 (Women)',dg.loc[(dg['Grade']>2100) & (dg['Sex']=='F')].shape[0]])
 		statWriter.writerow(['Players > 2100 (Women) (Inactive)',dg.loc[(dg['Grade']>2100) & (dg['Sex']=='F') & (dg['Flag']=='i')].shape[0]])
+		statWriter.writerow([])
 		del(dg)
 
 		# Setting up new dataframe and calculating ages
+		statWriter.writerow(['Age', 'All', 'Female'])
 		dg = df.loc[(df['Bday']!='-')]
 		dg['Bday'] = dg['Bday'].astype(int)
 		dg = dg.loc[(df['Bday']!=0)]
 		dg.Bday = int(year) - dg.Bday
 
-
-
-
-		#del(dg)
-
-		### Women over 2100 ###
-		# Look at age dist of those above 2100 women for most recent file
-		# Look at age dist of those above 2100 men for most recent file
-		# Look at age dist of those above 2100 women for most recent file
-
-		### Fide registrations by age group
-		# 0 - 5			M	F
-		# 5 - 10		M	F
-		# 10 - 15		M	F
-		# 15 - 20		M	F
-		# 20 - 25		M	F
-		# 25 - 30		M	F
-		# 30 - 35		M	F
-		# 35 - 40		M	F
-		# 40 - 45		M	F
-		# 45 - 50
-		# 50 - 55
-		# 55 - 60
-		# 60 - 65
-		# 65 - 70
-		# 70 - 75
-		# 75 - 80
-		# 80 - 85
-		# 85 - 90
-		# 90 - 95
-		# 95 - 100
-
-
-
-
-		# dg = df.loc[df['Flag']=='i']
+		# Looping through ages and finding total number and number of females for each age interval
+		for i in range(0,19):
+			a = 5*i+1
+			b = 5*(i+1)
+			statWriter.writerow(['('+str(a)+'-'+str(b)+')',dg.loc[(dg['Bday']>=a) & (dg['Bday']<= b)].shape[0],dg.loc[(dg['Bday']>=a) & (dg['Bday']<=b) & (dg['Sex']=='F')].shape[0]])
+		del(dg)
 
 		statFile.close()
+
 
 
 
