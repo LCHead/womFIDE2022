@@ -98,6 +98,9 @@ for path in pathYM:
 		arbiterList = ['IA','FA','NA','IO']
 		trainerList = ['FT','FST','DI','NI']
 
+		statWriter.writerow(['FIDE Statistics : '+month+' '+year])
+		statWriter.writerow([])
+
 		# Total and inactive
 		statWriter.writerow(['Players',df.shape[0]])
 		statWriter.writerow(['Women',df.loc[df['Sex']=='F'].shape[0]])
@@ -135,7 +138,7 @@ for path in pathYM:
 		dg.Bday = int(year) - dg.Bday
 
 		# Looping through ages and finding total number and number of females for each age interval
-		for i in range(0,19):
+		for i in range(0,20):
 			a = 5*i+1
 			b = 5*(i+1)
 			statWriter.writerow(['('+str(a)+'-'+str(b)+')',dg.loc[(dg['Bday']>=a) & (dg['Bday']<= b)].shape[0],dg.loc[(dg['Bday']>=a) & (dg['Bday']<=b) & (dg['Sex']=='F')].shape[0]])
