@@ -66,10 +66,15 @@ for path in pathYM:
 		df.OTit.str.upper()
 		df.Sex.str.upper()
 
+		# Remove lines with columns that have moved
+		df.drop(df.loc[df['Bday'].astype(str).str.contains(' ')].index,inplace=True)
+		df.drop(df.loc[df['K'].astype(str).str.contains(' ')].index,inplace=True)
+		df.drop(df.loc[df['Grade'].astype(str).str.contains(' ')].index,inplace=True)
+
 		# Make sure columns are the right length, or delete from data frame
-		df.drop(df[df["Bday"].astype(str).str.len()!=4].index, inplace=True)
-		df.drop(df[df["Grade"].astype(str).str.len()!=4].index, inplace=True)
 		df.drop(df[(df["K"].astype(int)).astype(str).str.len()!=2].index, inplace=True)
+		df.drop(df[(df["Grade"].astype(int)).astype(str).str.len()!=4].index, inplace=True)
+		df.drop(df[(df["Bday"].astype(int)).astype(str).str.len()!=4].index, inplace=True)
 
 		# Checks
 		# 1) Check that some columns don't have Federations that overspill too much
@@ -89,8 +94,6 @@ for path in pathYM:
 		    if tit != '-' and tit not in titleOpts:
 		        print(tit)
 
-
-
 		# 3) Check genders
 		sexOpts = ['M','F']
 		for sex in df.Sex:
@@ -100,14 +103,6 @@ for path in pathYM:
 		# Order columns :
 		colOrder = ['ID','Fed','Sex','Tit','WTit','OTit','Grade','Games','Bday','Flag']
 		df = df.reindex(columns=colOrder)
-
-		# STAGE 2
-		# 1) create a directory with processed data in it
-		# 2) for each task, generate a list of the names and years that satisfy that task
-		# 3) new directory for each task
-		# 4) one file (.txt or .csv) that has the figures ready to plot
-
-
 
 		# Statistics
 		statFile = open(outdatafileName,'w')
@@ -155,12 +150,15 @@ for path in pathYM:
 		dg = dg.loc[(df['Bday']!=0)]
 		dg.Bday = int(year) - dg.Bday
 
-		# Looping through ages and finding total number and number of females for each age interval
-		for i in range(0,20):
-			a = 5*i+1
-			b = 5*(i+1)
-			statWriter.writerow(['('+str(a)+'-'+str(b)+')',dg.loc[(dg['Bday']>=a) & (dg['Bday']<= b)].shape[0],dg.loc[(dg['Bday']>=a) & (dg['Bday']<=b) & (dg['Sex']=='F')].shape[0]])
+		for i in range(5,100):
+			statWriter.writerow([str(i),dg.loc[dg['Bday'].astype(int)==i].shape[0],dg.loc[(dg['Bday']==i) & (dg['Sex']=='F')].shape[0]])
 		del(dg)
+		# Looping through ages and finding total number and number of females for each age interval
+		#for i in range(0,20):
+		#	a = 5*i+1
+		#	b = 5*(i+1)
+		#	statWriter.writerow(['('+str(a)+'-'+str(b)+')',dg.loc[(dg['Bday']>=a) & (dg['Bday']<= b)].shape[0],dg.loc[(dg['Bday']>=a) & (dg['Bday']<=b) & (dg['Sex']=='F')].shape[0]])
+		#del(dg)
 
 		statFile.close()
 
