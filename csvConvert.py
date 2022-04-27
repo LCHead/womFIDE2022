@@ -31,13 +31,13 @@ for path in pathYM:
 	outdatafileName = outputDataDir+'/'+month+year+'Stats'+'.csv'
 
 	# Specific file type sorting here :
-	type = 0
-	if int(year) <= 2008:
-		type = 1		# ID name title country grade games flag
-	elif int(year) <= 2012 and month in [Jan,Feb,March,April,May,June,July]:
-		type = 2		# ????
-	else:
-		type = 3		# ID name fed sex tit wtit otit (foa) grade games K Bday Flag
+	type = 3
+	#if int(year) <= 2008:
+	#	type = 1		# ID name title country grade games flag
+	#elif int(year) <= 2012 and month in [Jan,Feb,March,April,May,June,July]:
+	#	type = 2		# ????
+	#else:
+	#	type = 3		# ID name fed sex tit wtit otit (foa) grade games K Bday Flag
 
 	if type == 3:
 
@@ -47,8 +47,14 @@ for path in pathYM:
 		# Manipulate the column data
 		df = df.replace(np.NaN, '-')                # Replace blank columns with '-'
 		df.Name = df.Name.str.replace(',', ';')     # Replace commas in name with ';'
-		df.rename(columns={'ID Number':'ID','Rk':'RK','SRtng':'Grade','SGm':'Games','B-day':'Bday'},inplace=True)		# rename column name
-		df.drop(columns=['Name','SK','RRtng','RGm','RK','BRtng','BGm','BK'],inplace=True)						# drop columns
+
+		# Identify the name of column with grade in it
+		columnGradeName = df.columns.values[7]
+		if columnGradeName == 'FOA':
+			columnGradeName = df.columns.values[8]
+
+		df.rename(columns={'ID Number':'ID','Rk':'RK',columnGradeName:'Grade','SGm':'Games','B-day':'Bday'},inplace=True)		# rename column name
+		#df.drop(columns=['Name','SK','RRtng','RGm','RK','BRtng','BGm','BK'],inplace=True)						# drop columns
 		if 'FOA' in df.columns:
 			df.drop(columns=['FOA'],inplace=True)	# Drop the FOA column if it exists
 		df.Flag[df['Flag']=='wi'] = 'i'				# Make all 'wi' just 'i'
@@ -60,6 +66,11 @@ for path in pathYM:
 		df.OTit.str.upper()
 		df.Sex.str.upper()
 
+		# Make sure columns are the right length, or delete from data frame
+		df.drop(df[df["Bday"].astype(str).str.len()!=4].index, inplace=True)
+		df.drop(df[df["Grade"].astype(str).str.len()!=4].index, inplace=True)
+		df.drop(df[(df["K"].astype(int)).astype(str).str.len()!=2].index, inplace=True)
+
 		# Checks
 		# 1) Check that some columns don't have Federations that overspill too much
 		for fed in df.Fed:
@@ -69,9 +80,16 @@ for path in pathYM:
 
 		# 2) Check that titles only include 'CM,FM,IM,GM,WCM,WIM,WFM,WGM'
 		titleOpts = ['CM','FM','IM','GM','WCM','WFM','WIM','WGM']
+		df.Tit[df['Tit']=='WC'] = 'WCM'
+		df.Tit[df['Tit']=='WF'] = 'WFM'
+		df.Tit[df['Tit']=='WM'] = 'WIM'
+		df.Tit[df['Tit']=='WI'] = 'WIM'
+		df.Tit[df['Tit']=='WG'] = 'WGM'
 		for tit in df.Tit:
 		    if tit != '-' and tit not in titleOpts:
 		        print(tit)
+
+
 
 		# 3) Check genders
 		sexOpts = ['M','F']
@@ -150,32 +168,4 @@ for path in pathYM:
 
 
 		# Convert to csv
-		df.to_csv(outfileName,index=False)
-		# dg.to_csv(outdatafileName,index=False)
-
-
-
-
-
-
-
-
-
-
-
-		### Learning pandas ###
-
-		#print(df)           # print dataframe
-		#print(df.shape)     # print number of rows and columns of data
-		#print(pd.set_option('display.max_columns',85))
-		#print(df.info())    # parenthesis if its a method
-		#print(df.head(50))     # opserve top 50 rows
-		#print(df.tail(50))     # opserve last 50 rows
-
-		# df.Name.str.upper() convert all strings to upper case
-
-		# df.loc -- row -- works on labels in my index. df.loc[2] finds the index labelled as 2.
-		# df.iloc -- column -- works on positions in these index.  looking for values within these indices that are at index 2.
-
-		# df.iloc[:,4] = 'columns' :  this works for changing columns
-		# df.loc[4] = 'rows' : this works for changing rows
+		#df.to_csv(outfileName,index=False)
