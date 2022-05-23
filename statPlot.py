@@ -188,7 +188,7 @@ plt.plot(listOfAges,ageend,label = '2022')
 plt.plot(listOfAges,agestart,':',color=saphire, label = '2012')
 #plt.plot(listOfAges,ageendwomen,color=cerulean)
 plt.legend()
-plt.savefig('AgeDist')
+plt.savefig('AgeDist1800i')
 plt.show()
 
 # Percentage 1800 women
@@ -197,7 +197,7 @@ plt.xlabel('Age')
 plt.plot(listOfAges,ageendwomen,color=cerulean,label='2022')
 plt.plot(listOfAges,agestartwomen,':',color=cerulean,label = '2012',)
 plt.legend()
-plt.savefig('AgeDistWomen')
+plt.savefig('AgeDistWomen1800i')
 plt.show()
 
 flag = 1
