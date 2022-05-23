@@ -151,7 +151,7 @@ for path in pathYM:
 		dg.Bday = int(year) - dg.Bday
 
 		for i in range(5,100):
-			statWriter.writerow([str(i),dg.loc[dg['Bday'].astype(int)==i].shape[0],dg.loc[(dg['Bday']==i) & (dg['Sex']=='F')].shape[0]])
+			statWriter.writerow([str(i),dg.loc[dg['Bday'].astype(int)==i & (dg['Grade'].astype(int)>1800) & (dg['Flag']=='i') ].shape[0],dg.loc[(dg['Bday'].astype(int)==i) & (dg['Flag']=='i') & (dg['Grade'].astype(int)>1800) & (dg['Sex']=='F')].shape[0]])
 		del(dg)
 		# Looping through ages and finding total number and number of females for each age interval
 		#for i in range(0,20):
