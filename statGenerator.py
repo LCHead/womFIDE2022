@@ -76,6 +76,9 @@ class Federation:
 		self.games_girls_top5_mean = []
 		self.games_girls_top5_std = []
 
+		# Disparity metric
+		self.disparity = 0
+
 		# Dummy variable that can be used to sort data
 		self.dummy = 0
 
@@ -111,294 +114,293 @@ for path in pathYM:
 	print('extracting : ',month, year)
 
 	if month == 'Dec':
-		if year == '2012' or year == '2013':
-			# Locate datafiles and set-up output paths
-			filepath = glob.glob('../'+year+'/'+month+'/'+'*.txt')[0] # input
-			outdatafileName = outputDataDir+'/'+month+year+'Stats'+'.csv' # output
-			outremovalfile = removalDataDir+'/'+month+year+'Removal'+'.csv' # output
+		# Locate datafiles and set-up output paths
+		filepath = glob.glob('../'+year+'/'+month+'/'+'*.txt')[0] # input
+		outdatafileName = outputDataDir+'/'+month+year+'Stats'+'.csv' # output
+		outremovalfile = removalDataDir+'/'+month+year+'Removal'+'.csv' # output
 
-			# Set up csv writer for storing output data
-			statFile = open(outdatafileName,'w')				# statistics
-			statWriter = csv.writer(statFile)
-			removalFile = open(outremovalfile,'w')				# quantity of data that has been removed from statistics
-			removalWriter = csv.writer(removalFile)
+		# Set up csv writer for storing output data
+		statFile = open(outdatafileName,'w')				# statistics
+		statWriter = csv.writer(statFile)
+		removalFile = open(outremovalfile,'w')				# quantity of data that has been removed from statistics
+		removalWriter = csv.writer(removalFile)
 
-			# Output file headers
-			statWriter.writerow(['FIDE Statistics : '+month+' '+year])
-			statWriter.writerow([])
-			removalWriter.writerow(['FIDE Data Removed From Statistics : '+month+' '+year])
-			removalWriter.writerow([])
+		# Output file headers
+		statWriter.writerow(['FIDE Statistics : '+month+' '+year])
+		statWriter.writerow([])
+		removalWriter.writerow(['FIDE Data Removed From Statistics : '+month+' '+year])
+		removalWriter.writerow([])
 
-			############################################################################
+		############################################################################
 
-			# Read in file and set up pandas dataframe
-			df = pd.read_fwf(filepath)
+		# Read in file and set up pandas dataframe
+		df = pd.read_fwf(filepath)
 
-			############################################################################
-			# Data handling and re-naming
+		############################################################################
+		# Data handling and re-naming
 
-			# Manipulate the column data
-			df = df.replace(np.NaN, '-')                # Replace blank columns with '-'
-			df.Name = df.Name.str.replace(',', ';')     # Replace commas in name with ';'
+		# Manipulate the column data
+		df = df.replace(np.NaN, '-')                # Replace blank columns with '-'
+		df.Name = df.Name.str.replace(',', ';')     # Replace commas in name with ';'
 
-			# Identify the name of column with grade in it and re-name to 'Grade'
-			columnGradeName = df.columns.values[7]
-			if columnGradeName == 'FOA':
-				columnGradeName = df.columns.values[8]
-			df.rename(columns={'ID Number':'ID','Rk':'RK',columnGradeName:'Grade','SGm':'Games','Gms':'Games','B-day':'Bday'},inplace=True)		# rename column name
+		# Identify the name of column with grade in it and re-name to 'Grade'
+		columnGradeName = df.columns.values[7]
+		if columnGradeName == 'FOA':
+			columnGradeName = df.columns.values[8]
+		df.rename(columns={'ID Number':'ID','Rk':'RK',columnGradeName:'Grade','SGm':'Games','Gms':'Games','B-day':'Bday'},inplace=True)		# rename column name
 
-			# To keep datasets consistent with FOA column, and inactivity flag
-			if 'FOA' in df.columns:
-				df.drop(columns=['FOA'],inplace=True)	# Drop the FOA column if it exists
-			df.at[df['Flag']=='wi','Flag'] = 'i'		# Make all 'wi' just 'i'
-			df.at[df['Flag']=='w','Flag'] = '-'			# Make all 'w' just '-'
+		# To keep datasets consistent with FOA column, and inactivity flag
+		if 'FOA' in df.columns:
+			df.drop(columns=['FOA'],inplace=True)	# Drop the FOA column if it exists
+		df.at[df['Flag']=='wi','Flag'] = 'i'		# Make all 'wi' just 'i'
+		df.at[df['Flag']=='w','Flag'] = '-'			# Make all 'w' just '-'
 
-			# Make sure all these columns are upper case / capitals
-			df['Tit'] = df['Tit'].str.upper()
-			df['WTit'] = df['WTit'].str.upper()
-			df['OTit'] = df['OTit'].str.upper()
-			df['Sex'] = df['Sex'].str.upper()
-			df['Fed'] = df['Fed'].str.upper()
+		# Make sure all these columns are upper case / capitals
+		df['Tit'] = df['Tit'].str.upper()
+		df['WTit'] = df['WTit'].str.upper()
+		df['OTit'] = df['OTit'].str.upper()
+		df['Sex'] = df['Sex'].str.upper()
+		df['Fed'] = df['Fed'].str.upper()
 
-			# Data removal
-			OriginalNumber = df.shape[0]				# Original number of entries
+		# Data removal
+		OriginalNumber = df.shape[0]				# Original number of entries
 
-			# Remove lines with columns that have moved
-			removalWriter.writerow(['Columns that moved'])
-			df.drop(df.loc[df['Bday'].astype(str).str.contains(' ')].index,inplace=True)
-			removalWriter.writerow(['Birthday',OriginalNumber-df.shape[0]])
-			df.drop(df.loc[df['K'].astype(str).str.contains(' ')].index,inplace=True)
-			removalWriter.writerow(['K',OriginalNumber-df.shape[0]])
-			df.drop(df.loc[df['Grade'].astype(str).str.contains(' ')].index,inplace=True)
-			removalWriter.writerow(['Grade',OriginalNumber-df.shape[0]])
-			removalWriter.writerow([])
+		# Remove lines with columns that have moved
+		removalWriter.writerow(['Columns that moved'])
+		df.drop(df.loc[df['Bday'].astype(str).str.contains(' ')].index,inplace=True)
+		removalWriter.writerow(['Birthday',OriginalNumber-df.shape[0]])
+		df.drop(df.loc[df['K'].astype(str).str.contains(' ')].index,inplace=True)
+		removalWriter.writerow(['K',OriginalNumber-df.shape[0]])
+		df.drop(df.loc[df['Grade'].astype(str).str.contains(' ')].index,inplace=True)
+		removalWriter.writerow(['Grade',OriginalNumber-df.shape[0]])
+		removalWriter.writerow([])
 
-			# Remove lines with columns that are the wrong length
-			removalWriter.writerow(['Columns with incorrect length'])
-			df.drop(df[(df["K"].astype(int)).astype(str).str.len()!=2].index, inplace=True)
-			removalWriter.writerow(['K',OriginalNumber-df.shape[0]])
-			df.drop(df[(df["Grade"].astype(int)).astype(str).str.len()!=4].index, inplace=True)
-			removalWriter.writerow(['Grade',OriginalNumber-df.shape[0]])
+		# Remove lines with columns that are the wrong length
+		removalWriter.writerow(['Columns with incorrect length'])
+		df.drop(df[(df["K"].astype(int)).astype(str).str.len()!=2].index, inplace=True)
+		removalWriter.writerow(['K',OriginalNumber-df.shape[0]])
+		df.drop(df[(df["Grade"].astype(int)).astype(str).str.len()!=4].index, inplace=True)
+		removalWriter.writerow(['Grade',OriginalNumber-df.shape[0]])
 
-			FinalNumber = df.shape[0]
-			if OriginalNumber != FinalNumber:
-				print("Data removed = ", OriginalNumber-FinalNumber)
+		FinalNumber = df.shape[0]
+		if OriginalNumber != FinalNumber:
+			print("Data removed = ", OriginalNumber-FinalNumber)
 
-			# Check that some columns don't have Federations that overspill
-			for fed in df.Fed:
-				if len(fed) > 3:
-					print('datafile conversion error. column widths incorrect')
-					exit()
+		# Check that some columns don't have Federations that overspill
+		for fed in df.Fed:
+			if len(fed) > 3:
+				print('datafile conversion error. column widths incorrect')
+				exit()
 
-			# Re-naming the old formats for titles to new format (including M)
-			df.at[df['Tit']=='WC','Tit'] = 'WCM'
-			df.at[df['Tit']=='WF','Tit'] = 'WFM'
-			df.at[df['Tit']=='WM','Tit'] = 'WIM'
-			df.at[df['Tit']=='WI','Tit'] = 'WIM'
-			df.at[df['Tit']=='WG','Tit'] = 'WGM'
+		# Re-naming the old formats for titles to new format (including M)
+		df.at[df['Tit']=='WC','Tit'] = 'WCM'
+		df.at[df['Tit']=='WF','Tit'] = 'WFM'
+		df.at[df['Tit']=='WM','Tit'] = 'WIM'
+		df.at[df['Tit']=='WI','Tit'] = 'WIM'
+		df.at[df['Tit']=='WG','Tit'] = 'WGM'
 
-			# Check that titles only include 'CM,FM,IM,GM,WCM,WIM,WFM,WGM'
-			titleOpts = ['CM','FM','IM','GM','WCM','WFM','WIM','WGM']
-			for tit in df.Tit:
-				if tit != '-' and tit not in titleOpts and tit != 'HM' and tit != 'WH':
-					print(tit)
+		# Check that titles only include 'CM,FM,IM,GM,WCM,WIM,WFM,WGM'
+		titleOpts = ['CM','FM','IM','GM','WCM','WFM','WIM','WGM']
+		for tit in df.Tit:
+			if tit != '-' and tit not in titleOpts and tit != 'HM' and tit != 'WH':
+				print(tit)
 
-			# Check genders
-			sexOpts = ['M','F']
-			for sex in df.Sex:
-				if sex not in sexOpts:
-					print('other option than M or F', sex)
-					exit()
+		# Check genders
+		sexOpts = ['M','F']
+		for sex in df.Sex:
+			if sex not in sexOpts:
+				print('other option than M or F', sex)
+				exit()
 
-			# Set numerical columns to integers
-			df['Grade'] = df['Grade'].astype(int)
-			df['Bday'] = df['Bday'].astype(int)
-			df['Games'] = df['Games'].astype(int)
+		# Set numerical columns to integers
+		df['Grade'] = df['Grade'].astype(int)
+		df['Bday'] = df['Bday'].astype(int)
+		df['Games'] = df['Games'].astype(int)
 
-			############################################################################
+		############################################################################
 
-			# Order columns :
-			colOrder = ['ID','Fed','Sex','Tit','WTit','OTit','Grade','Games','Bday','Flag']
-			df = df.reindex(columns=colOrder)
+		# Order columns :
+		colOrder = ['ID','Fed','Sex','Tit','WTit','OTit','Grade','Games','Bday','Flag']
+		df = df.reindex(columns=colOrder)
 
-			############################################################################
-			# Federations
+		############################################################################
+		# Federations
 
-			# List of federations
-			federationList = (df['Fed'].unique()).tolist()		# name of federations
+		# List of federations
+		federationList = (df['Fed'].unique()).tolist()		# name of federations
 
-			# Loop through federations
-			for federation in federationList:
-
-				############################################################################
-				# Initialise federation
-
-				# Initialise federation object into their class
-				if federation not in federationObjectsCheck:
-					federationObjects.append(Federation(federation))
-					federationObjectsCheck.append(federation)
-
-				# Find index (location) for federation in federation list
-				index = federationObjectsCheck.index(federation)
-
-				# Set-up new dataframe for each federation
-				dh = df.loc[df['Fed'] == federation]
-
-				########################################################################
-				# Statistics of federation
-				federationObjects[index].time.append(time)
-
-				# Raw Numbers [all,active]
-				federationObjects[index].all.append(dh.shape[0])
-				federationObjects[index].all_active.append(dh.loc[dh['Flag']=='-'].shape[0])
-				federationObjects[index].female.append(dh.loc[dh['Sex']=='F'].shape[0])
-				federationObjects[index].female_active.append(dh.loc[(dh['Flag']=='-') & (dh['Sex']=='F')].shape[0])
-
-				federationObjects[index].all_rated.append(dh.loc[dh['Grade']!=0].shape[0])
-				federationObjects[index].all_active_rated.append(dh.loc[(dh['Flag']=='-') & (dh['Grade']!=0)].shape[0])
-
-				federationObjects[index].wcm.append(dh.loc[(dh['Tit']=='WCM')].shape[0])
-				federationObjects[index].wcm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='WCM')].shape[0])
-				federationObjects[index].wfm.append(dh.loc[(dh['Tit']=='WFM')].shape[0])
-				federationObjects[index].wfm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='WFM')].shape[0])
-				federationObjects[index].wim.append(dh.loc[(dh['Tit']=='WIM')].shape[0])
-				federationObjects[index].wim_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='WIM')].shape[0])
-				federationObjects[index].wgm.append(dh.loc[(dh['Tit']=='WGM')].shape[0])
-				federationObjects[index].wgm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='WGM')].shape[0])
-				federationObjects[index].cm.append(dh.loc[(dh['Tit']=='CM')].shape[0])
-				federationObjects[index].cm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='CM')].shape[0])
-				federationObjects[index].fm.append(dh.loc[(dh['Tit']=='FM')].shape[0])
-				federationObjects[index].fm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='FM')].shape[0])
-				federationObjects[index].im.append(dh.loc[(dh['Tit']=='IM')].shape[0])
-				federationObjects[index].im_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='IM')].shape[0])
-				federationObjects[index].gm.append(dh.loc[(dh['Tit']=='GM')].shape[0])
-				federationObjects[index].gm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='GM')].shape[0])
-
-				# Other Numbers (active only)
-
-				# Cut out inactive and those with ratings of 0 and order by rating
-				di = dh.loc[(dh['Flag']=='-') & (dh['Grade']!=0)]
-				di = di.sort_values(by=['Grade'],ascending=False)
-
-				# List of ID's for top 10 playersååååå
-				# L_id_top = (di.head(10)['ID']).tolist()
-				# L_id_top_female = (di.loc[di['Sex']=='F'].head(10)['ID']).tolist()
-
-				# Array of grades to analyse
-				gradeArray_all = di['Grade'].to_numpy()
-				gradeArray_top = di['Grade'].head(10).to_numpy()
-				gradeArray_female = (di.loc[di['Sex']=='F']['Grade']).to_numpy()
-				gradeArray_top_female = (di.loc[di['Sex']=='F']['Grade']).head(10).to_numpy()
-
-				# Arrays of top 5 under 20 girls and boys
-				di = di.loc[(di['Bday'] != 0) & (di['Bday'] >= (int(year)-20))]
-				Junior5_male_grades = di.loc[di['Sex']=='M'].head(5)['Grade'].to_numpy()
-				Junior5_female_grades = di.loc[di['Sex']=='F'].head(5)['Grade'].to_numpy()
-				Junior5_male_games = di.loc[di['Sex']=='M'].head(5)['Games'].to_numpy()
-				Junior5_female_games = di.loc[di['Sex']=='F'].head(5)['Games'].to_numpy()
-
-				# Average rating and standard deviation of ratings
-				if len(gradeArray_all) > 0:
-					federationObjects[index].rating_all_mean.append(np.mean(gradeArray_all))
-					federationObjects[index].rating_all_std.append(np.std(gradeArray_all))
-				else:
-					federationObjects[index].rating_all_mean.append(0.0)
-					federationObjects[index].rating_all_std.append(0.0)
-				if len(gradeArray_top) > 0:
-					federationObjects[index].rating_top10_mean.append(np.mean(gradeArray_top))
-					federationObjects[index].rating_top10_std.append(np.std(gradeArray_top))
-				else:
-					federationObjects[index].rating_top10_mean.append(0.0)
-					federationObjects[index].rating_top10_std.append(0.0)
-				if len(gradeArray_female) > 0:
-					federationObjects[index].rating_female_mean.append(np.mean(gradeArray_female))
-					federationObjects[index].rating_female_std.append(np.std(gradeArray_female))
-				else:
-					federationObjects[index].rating_female_mean.append(0.0)
-					federationObjects[index].rating_female_std.append(0.0)
-				if len(gradeArray_top_female) > 0:
-					federationObjects[index].rating_female_top10_mean.append(np.mean(gradeArray_top_female))
-					federationObjects[index].rating_female_top10_std.append(np.std(gradeArray_top_female))
-				else:
-					federationObjects[index].rating_female_top10_mean.append(0.0)
-					federationObjects[index].rating_female_top10_std.append(0.0)
-
-				# Ratings for top 5 male and female juniors
-				if len(Junior5_male_grades) > 0:
-					federationObjects[index].rating_boys_top5_mean.append(np.mean(Junior5_male_grades))
-					federationObjects[index].rating_boys_top5_std.append(np.std(Junior5_male_grades))
-				else:
-					federationObjects[index].rating_boys_top5_mean.append(0.0)
-					federationObjects[index].rating_boys_top5_std.append(0.0)
-				if len(Junior5_female_grades) > 0:
-					federationObjects[index].rating_girls_top5_mean.append(np.mean(Junior5_female_grades))
-					federationObjects[index].rating_girls_top5_std.append(np.std(Junior5_female_grades))
-				else:
-					federationObjects[index].rating_girls_top5_mean.append(0.0)
-					federationObjects[index].rating_girls_top5_std.append(0.0)
-
-				# Average number games per player for top 5 male and female juniors
-				if len(Junior5_male_games) > 0:
-					federationObjects[index].games_boys_top5_mean.append(np.mean(Junior5_male_games))
-					federationObjects[index].games_boys_top5_std.append(np.std(Junior5_male_games/len(Junior5_male_games)))
-				else:
-					federationObjects[index].games_boys_top5_mean.append(0.0)
-					federationObjects[index].games_boys_top5_std.append(0.0)
-				if len(Junior5_male_games) > 0:
-					federationObjects[index].games_girls_top5_mean.append(np.mean(Junior5_female_games))
-					federationObjects[index].games_girls_top5_std.append(np.std(Junior5_female_games/len(Junior5_female_games)))
-				else:
-					federationObjects[index].games_girls_top5_mean.append(0.0)
-					federationObjects[index].games_girls_top5_std.append(0.0)
-
-				########################################################################
+		# Loop through federations
+		for federation in federationList:
 
 			############################################################################
-			# Statistics
+			# Initialise federation
 
-			# Total and inactive
-			statWriter.writerow(['Players',df.shape[0]])
-			statWriter.writerow(['Women',df.loc[df['Sex']=='F'].shape[0]])
-			statWriter.writerow(['Men',df.loc[df['Sex']=='M'].shape[0]])
-			statWriter.writerow(['Inactive',df.loc[df['Flag']=='i'].shape[0]])
-			statWriter.writerow(['Inactive (Women)',df.loc[(df['Flag']=='i') & (df['Sex']=='F')].shape[0]])
-			statWriter.writerow([])
+			# Initialise federation object into their class
+			if federation not in federationObjectsCheck:
+				federationObjects.append(Federation(federation))
+				federationObjectsCheck.append(federation)
 
-			# Setting up new dataframe and casting all ratings as integers
-			dg = df.loc[df['Grade']!='-']
-			dg['Grade'] = dg['Grade'].astype(int)
-			statWriter.writerow([])
-			statWriter.writerow(['Players > 1800',dg.loc[(dg['Grade']>1800)].shape[0]])
-			statWriter.writerow(['Players > 1800 (Inactive)',dg.loc[(dg['Grade']>1800) & (dg['Flag']=='i')].shape[0]])
-			statWriter.writerow(['Players > 1800 (Women)',dg.loc[(dg['Grade']>1800) & (dg['Sex']=='F')].shape[0]])
-			statWriter.writerow(['Players > 1800 (Women) (Inactive)',dg.loc[(dg['Grade']>1800) & (dg['Sex']=='F') & (dg['Flag']=='i')].shape[0]])
-			statWriter.writerow(['Players > 2100',dg.loc[(dg['Grade']>2100)].shape[0]])
-			statWriter.writerow(['Players > 2100 (Inactive)',dg.loc[(dg['Grade']>2100) & (dg['Flag']=='i')].shape[0]])
-			statWriter.writerow(['Players > 2100 (Women)',dg.loc[(dg['Grade']>2100) & (dg['Sex']=='F')].shape[0]])
-			statWriter.writerow(['Players > 2100 (Women) (Inactive)',dg.loc[(dg['Grade']>2100) & (dg['Sex']=='F') & (dg['Flag']=='i')].shape[0]])
-			statWriter.writerow([])
-			del(dg)
+			# Find index (location) for federation in federation list
+			index = federationObjectsCheck.index(federation)
 
-			############################################################################
-			# Age Related Statistics
+			# Set-up new dataframe for each federation
+			dh = df.loc[df['Fed'] == federation]
 
-			# Remove birthdays which aren't in usual format
-			df.drop(df[(df["Bday"].astype(int)).astype(str).str.len()!=4].index, inplace=True)
-			removalWriter.writerow(['Birthday',OriginalNumber-df.shape[0]])
-			removalFile.close()
+			########################################################################
+			# Statistics of federation
+			federationObjects[index].time.append(time)
 
-			# Setting up new dataframe and calculating ages
-			statWriter.writerow(['Age', 'All', 'Female'])
-			dg = df.loc[(df['Bday']!='-')]
-			dg['Bday'] = dg['Bday'].astype(int)
-			dg = dg.loc[(df['Bday']!=0)]
-			dg.Bday = int(year) - dg.Bday
+			# Raw Numbers [all,active]
+			federationObjects[index].all.append(dh.shape[0])
+			federationObjects[index].all_active.append(dh.loc[dh['Flag']=='-'].shape[0])
+			federationObjects[index].female.append(dh.loc[dh['Sex']=='F'].shape[0])
+			federationObjects[index].female_active.append(dh.loc[(dh['Flag']=='-') & (dh['Sex']=='F')].shape[0])
 
-			for i in range(5,100):
-				statWriter.writerow([str(i),dg.loc[dg['Bday'].astype(int)==i & (dg['Grade'].astype(int)>1800) & (dg['Flag']=='i') ].shape[0],dg.loc[(dg['Bday'].astype(int)==i) & (dg['Flag']=='i') & (dg['Grade'].astype(int)>1800) & (dg['Sex']=='F')].shape[0]])
-			del(dg)
+			federationObjects[index].all_rated.append(dh.loc[dh['Grade']!=0].shape[0])
+			federationObjects[index].all_active_rated.append(dh.loc[(dh['Flag']=='-') & (dh['Grade']!=0)].shape[0])
 
-			statFile.close()
+			federationObjects[index].wcm.append(dh.loc[(dh['Tit']=='WCM')].shape[0])
+			federationObjects[index].wcm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='WCM')].shape[0])
+			federationObjects[index].wfm.append(dh.loc[(dh['Tit']=='WFM')].shape[0])
+			federationObjects[index].wfm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='WFM')].shape[0])
+			federationObjects[index].wim.append(dh.loc[(dh['Tit']=='WIM')].shape[0])
+			federationObjects[index].wim_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='WIM')].shape[0])
+			federationObjects[index].wgm.append(dh.loc[(dh['Tit']=='WGM')].shape[0])
+			federationObjects[index].wgm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='WGM')].shape[0])
+			federationObjects[index].cm.append(dh.loc[(dh['Tit']=='CM')].shape[0])
+			federationObjects[index].cm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='CM')].shape[0])
+			federationObjects[index].fm.append(dh.loc[(dh['Tit']=='FM')].shape[0])
+			federationObjects[index].fm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='FM')].shape[0])
+			federationObjects[index].im.append(dh.loc[(dh['Tit']=='IM')].shape[0])
+			federationObjects[index].im_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='IM')].shape[0])
+			federationObjects[index].gm.append(dh.loc[(dh['Tit']=='GM')].shape[0])
+			federationObjects[index].gm_active.append(dh.loc[(dh['Flag']=='-') & (dh['Tit']=='GM')].shape[0])
+
+			# Other Numbers (active only)
+
+			# Cut out inactive and those with ratings of 0 and order by rating
+			di = dh.loc[(dh['Flag']=='-') & (dh['Grade']!=0)]
+			di = di.sort_values(by=['Grade'],ascending=False)
+
+			# List of ID's for top 10 playersååååå
+			# L_id_top = (di.head(10)['ID']).tolist()
+			# L_id_top_female = (di.loc[di['Sex']=='F'].head(10)['ID']).tolist()
+
+			# Array of grades to analyse
+			gradeArray_all = di['Grade'].to_numpy()
+			gradeArray_top = di['Grade'].head(10).to_numpy()
+			gradeArray_female = (di.loc[di['Sex']=='F']['Grade']).to_numpy()
+			gradeArray_top_female = (di.loc[di['Sex']=='F']['Grade']).head(10).to_numpy()
+
+			# Arrays of top 5 under 20 girls and boys
+			di = di.loc[(di['Bday'] != 0) & (di['Bday'] >= (int(year)-20))]
+			Junior5_male_grades = di.loc[di['Sex']=='M'].head(5)['Grade'].to_numpy()
+			Junior5_female_grades = di.loc[di['Sex']=='F'].head(5)['Grade'].to_numpy()
+			Junior5_male_games = di.loc[di['Sex']=='M'].head(5)['Games'].to_numpy()
+			Junior5_female_games = di.loc[di['Sex']=='F'].head(5)['Games'].to_numpy()
+
+			# Average rating and standard deviation of ratings
+			if len(gradeArray_all) > 0:
+				federationObjects[index].rating_all_mean.append(np.mean(gradeArray_all))
+				federationObjects[index].rating_all_std.append(np.std(gradeArray_all))
+			else:
+				federationObjects[index].rating_all_mean.append(0.0)
+				federationObjects[index].rating_all_std.append(0.0)
+			if len(gradeArray_top) > 0:
+				federationObjects[index].rating_top10_mean.append(np.mean(gradeArray_top))
+				federationObjects[index].rating_top10_std.append(np.std(gradeArray_top))
+			else:
+				federationObjects[index].rating_top10_mean.append(0.0)
+				federationObjects[index].rating_top10_std.append(0.0)
+			if len(gradeArray_female) > 0:
+				federationObjects[index].rating_female_mean.append(np.mean(gradeArray_female))
+				federationObjects[index].rating_female_std.append(np.std(gradeArray_female))
+			else:
+				federationObjects[index].rating_female_mean.append(0.0)
+				federationObjects[index].rating_female_std.append(0.0)
+			if len(gradeArray_top_female) > 0:
+				federationObjects[index].rating_female_top10_mean.append(np.mean(gradeArray_top_female))
+				federationObjects[index].rating_female_top10_std.append(np.std(gradeArray_top_female))
+			else:
+				federationObjects[index].rating_female_top10_mean.append(0.0)
+				federationObjects[index].rating_female_top10_std.append(0.0)
+
+			# Ratings for top 5 male and female juniors
+			if len(Junior5_male_grades) > 0:
+				federationObjects[index].rating_boys_top5_mean.append(np.mean(Junior5_male_grades))
+				federationObjects[index].rating_boys_top5_std.append(np.std(Junior5_male_grades))
+			else:
+				federationObjects[index].rating_boys_top5_mean.append(0.0)
+				federationObjects[index].rating_boys_top5_std.append(0.0)
+			if len(Junior5_female_grades) > 0:
+				federationObjects[index].rating_girls_top5_mean.append(np.mean(Junior5_female_grades))
+				federationObjects[index].rating_girls_top5_std.append(np.std(Junior5_female_grades))
+			else:
+				federationObjects[index].rating_girls_top5_mean.append(0.0)
+				federationObjects[index].rating_girls_top5_std.append(0.0)
+
+			# Average number games per player for top 5 male and female juniors
+			if len(Junior5_male_games) > 0:
+				federationObjects[index].games_boys_top5_mean.append(np.mean(Junior5_male_games))
+				federationObjects[index].games_boys_top5_std.append(np.std(Junior5_male_games/len(Junior5_male_games)))
+			else:
+				federationObjects[index].games_boys_top5_mean.append(0.0)
+				federationObjects[index].games_boys_top5_std.append(0.0)
+			if len(Junior5_male_games) > 0:
+				federationObjects[index].games_girls_top5_mean.append(np.mean(Junior5_female_games))
+				federationObjects[index].games_girls_top5_std.append(np.std(Junior5_female_games/len(Junior5_female_games)))
+			else:
+				federationObjects[index].games_girls_top5_mean.append(0.0)
+				federationObjects[index].games_girls_top5_std.append(0.0)
+
+			########################################################################
+
+		############################################################################
+		# Statistics
+
+		# Total and inactive
+		statWriter.writerow(['Players',df.shape[0]])
+		statWriter.writerow(['Women',df.loc[df['Sex']=='F'].shape[0]])
+		statWriter.writerow(['Men',df.loc[df['Sex']=='M'].shape[0]])
+		statWriter.writerow(['Inactive',df.loc[df['Flag']=='i'].shape[0]])
+		statWriter.writerow(['Inactive (Women)',df.loc[(df['Flag']=='i') & (df['Sex']=='F')].shape[0]])
+		statWriter.writerow([])
+
+		# Setting up new dataframe and casting all ratings as integers
+		dg = df.loc[df['Grade']!='-']
+		dg['Grade'] = dg['Grade'].astype(int)
+		statWriter.writerow([])
+		statWriter.writerow(['Players > 1800',dg.loc[(dg['Grade']>1800)].shape[0]])
+		statWriter.writerow(['Players > 1800 (Inactive)',dg.loc[(dg['Grade']>1800) & (dg['Flag']=='i')].shape[0]])
+		statWriter.writerow(['Players > 1800 (Women)',dg.loc[(dg['Grade']>1800) & (dg['Sex']=='F')].shape[0]])
+		statWriter.writerow(['Players > 1800 (Women) (Inactive)',dg.loc[(dg['Grade']>1800) & (dg['Sex']=='F') & (dg['Flag']=='i')].shape[0]])
+		statWriter.writerow(['Players > 2100',dg.loc[(dg['Grade']>2100)].shape[0]])
+		statWriter.writerow(['Players > 2100 (Inactive)',dg.loc[(dg['Grade']>2100) & (dg['Flag']=='i')].shape[0]])
+		statWriter.writerow(['Players > 2100 (Women)',dg.loc[(dg['Grade']>2100) & (dg['Sex']=='F')].shape[0]])
+		statWriter.writerow(['Players > 2100 (Women) (Inactive)',dg.loc[(dg['Grade']>2100) & (dg['Sex']=='F') & (dg['Flag']=='i')].shape[0]])
+		statWriter.writerow([])
+		del(dg)
+
+		############################################################################
+		# Age Related Statistics
+
+		# Remove birthdays which aren't in usual format
+		df.drop(df[(df["Bday"].astype(int)).astype(str).str.len()!=4].index, inplace=True)
+		removalWriter.writerow(['Birthday',OriginalNumber-df.shape[0]])
+		removalFile.close()
+
+		# Setting up new dataframe and calculating ages
+		statWriter.writerow(['Age', 'All', 'Female'])
+		dg = df.loc[(df['Bday']!='-')]
+		dg['Bday'] = dg['Bday'].astype(int)
+		dg = dg.loc[(df['Bday']!=0)]
+		dg.Bday = int(year) - dg.Bday
+
+		for i in range(5,100):
+			statWriter.writerow([str(i),dg.loc[dg['Bday'].astype(int)==i & (dg['Grade'].astype(int)>1800) & (dg['Flag']=='i') ].shape[0],dg.loc[(dg['Bday'].astype(int)==i) & (dg['Flag']=='i') & (dg['Grade'].astype(int)>1800) & (dg['Sex']=='F')].shape[0]])
+		del(dg)
+
+		statFile.close()
 
 ############################################################################
 # Top rated federations
@@ -408,37 +410,39 @@ if not os.path.exists(topFedsDir):
 	os.makedirs(topFedsDir)
 
 ratedFedOpen = open(topFedsDir + '/topRated.csv','w')
+rated2021FedOpen = open(topFedsDir + '/top2021Rated.csv','w')
 ratedFedWomen = open(topFedsDir + '/topRatedWomen.csv','w')
+disparityMetric = open(topFedsDir + '/disparityMetric.csv','w')
 
 openWriter = csv.writer(ratedFedOpen)
+open2021Writer = csv.writer(rated2021FedOpen)
 womenWriter= csv.writer(ratedFedWomen)
+disparityWriter= csv.writer(disparityMetric)
 
-openWriter.writerow(['Top Federations by Average Rating of Top 10 Players (December)'])
-womenWriter.writerow(['Top Federations by Average Rating of Top 10 Female Players (December)'])
+openWriter.writerow(['Top Federations by Average Rating of Top 10 Players'])
+womenWriter.writerow(['Top Federations by Average Rating of Top 10 Female Players'])
+disparityWriter.writerow(['Disparity between Average Rating of Top 10 Players (Open - Women)'])
+openWriter.writerow(['Rank','Federation','Mean','Standard Deviation'])
+womenWriter.writerow(['Rank','Federation','Mean','Standard Deviation'])
+open2021Writer.writerow(['Top Federations by Average Rating of Top 10 Players (Dec 2021)'])
 openWriter.writerow([])
+open2021Writer.writerow([])
 womenWriter.writerow([])
-
-# List to store top 10 federation data (for each year) to write to row
-fedListYearsOpen = []					# Federation List : [2012[1st,2nd,...],2013,2014,...]
-meanListYearsOpen = []					# Average rating of top 10 players
-stdListYearsOpen = []					# Standard deviation of average rating of top 10 players
-
-# List to store top 10 federation data (for each year) to write to row
-fedListYearsWomen = []					# Federation List : [2012[1st,2nd,...],2013,2014,...]
-meanListYearsWomen = []					# Average rating of top 10 players
-stdListYearsWomen = []					# Standard deviation of average rating of top 10 players
-
-# List of years
-yearList = []
+disparityWriter.writerow([])
 
 # Loop through years and write to file
-for yrs in range(2012,2013):
+for yrs in range(2012,2022):
 	# Time indicators by year
 	tm = float(yrs + 11/12)								# time
-	yearList.append(yrs)
+	openWriter.writerow(['December '+ str(yrs)])
+	womenWriter.writerow(['December '+ str(yrs)])
+	disparityWriter.writerow(['December '+ str(yrs)])
 
-	# Feds in year
 	condition_federationObjects = []
+	disparity_federationObjects = []
+
+	# Disparity Metric
+	disparityMetricList = []
 
 	# Loop through federations,
 	for fed_ in federationObjects:
@@ -447,66 +451,66 @@ for yrs in range(2012,2013):
 			fed_.dummy = [fed_.rating_top10_mean[tm_index],fed_.rating_top10_std[tm_index],fed_.rating_female_top10_mean[tm_index],fed_.rating_female_top10_std[tm_index]]
 			condition_federationObjects.append(fed_)
 
+			# Find averages for rating disparity
+			if fed_.rating_top10_mean[tm_index] != 0.0 and fed_.rating_female_top10_mean[tm_index] != 0.0 and fed_.female_active[tm_index] >= 10:
+				disparityMetricList.append(fed_.rating_top10_mean[tm_index]-fed_.rating_female_top10_mean[tm_index])
+				disparity_federationObjects.append(fed_)
+
+	# Find Mean and Standard Deviation Disparity Metric
+	DisparityMetric = np.array(disparityMetricList)
+	DisparityMean = np.mean(disparityMetricList)
+	DisparityStd = np.std(disparityMetricList)
+
+	# Write to file
+	disparityWriter.writerow(['Mean : ', DisparityMean])
+	disparityWriter.writerow(['S.d. : ', DisparityStd])
+	disparityWriter.writerow([])
+	disparityWriter.writerow(['Rank','Federation','Disparity','Top10AvrOpen','Top10AvrWomen'])
+
+	############################################################################
+	# Standard deviation of disparity metric
+	for fed_ in disparity_federationObjects:
+		fed_.disparity = (fed_.dummy[0] - fed_.dummy[2]) - DisparityMean
+
+	disparity_federationObjects.sort(key=lambda x: x.disparity)
+
+	number = 1
+	for fed_ in disparity_federationObjects:
+		disparityWriter.writerow([number, fed_.name, fed_.disparity,fed_.dummy[0],fed_.dummy[2]])
+		number += 1
+	disparityWriter.writerow([])
+
 	############################################################################
 	# Open
 
-	# Temporary lists to store top 10 federations for each year
-	fedListTemp = []
-	meanListTemp = []
-	stdListTemp = []
-
-	# Rank objects by rating[index]
+	# Rank by open average rating
 	condition_federationObjects.sort(key=lambda x: x.dummy[0],reverse=True)
 
-	# Loop through top 10 federations and add to temporary lists
+	# Write to file
 	for i in range(10):
-		fedListTemp.append(condition_federationObjects[i].name)
-		meanListTemp.append(condition_federationObjects[i].rating_top10_mean[tm_index])
-		stdListTemp.append(condition_federationObjects[i].rating_top10_std[tm_index])
+		openWriter.writerow([i+1,condition_federationObjects[i].name,condition_federationObjects[i].dummy[0],condition_federationObjects[i].dummy[2]])
+	openWriter.writerow([])
 
-	# Add the top 10 federations for each year into the combined list for all years
-	fedListYearsOpen.append(fedListTemp)
-	meanListYearsOpen.append(meanListTemp)
-	stdListYearsOpen.append(stdListTemp)
+	for fed_ in condition_federationObjects:
+		open2021Writer.writerow([i+1,fed_.name,fed_.dummy[0],fed_.dummy[2]])
+
 
 	############################################################################
 	# Women
 
-	# Temporary lists to store top 10 federations for each year
-	fedListTemp = []
-	meanListTemp = []
-	stdListTemp = []
-
-	# Rank objects by rating[index]
+	# Rank by womens average rating
 	condition_federationObjects.sort(key=lambda x: x.dummy[2],reverse=True)
 
-	# Loop through top 10 federations and add to temporary lists
+	# Write to file
 	for i in range(10):
-		fedListTemp.append(condition_federationObjects[i].name)
-		meanListTemp.append(condition_federationObjects[i].rating_top10_mean[tm_index])
-		stdListTemp.append(condition_federationObjects[i].rating_top10_std[tm_index])
-
-	# Add the top 10 federations for each year into the combined list for all years
-	fedListYearsWomen.append(fedListTemp)
-	meanListYearsWomen.append(meanListTemp)
-	stdListYearsWomen.append(stdListTemp)
-
-# Write out the years
-openWriter.writerow(yearList)
-womenWriter.writerow(yearList)
-
-# Transpose lists to [1st[2012,2013,...],2nd[2012,2013,...],...]
-fedListYearsOpen_T = np.array(fedListYearsOpen).T
-meanListYearsOpen_T = np.array(meanListYearsOpen).T
-stdListYearsOpen_T = np.array(stdListYearsOpen).T
-fedListYearsWomen_T = np.array(fedListYearsWomen).T
-meanListYearsWomen_T = np.array(meanListYearsWomen).T
-stdListYearsWomen_T = np.array(stdListYearsWomen).T
-
-# Write in data row by row
-for r in range(2):
-	openWriter.writerow([[r],fedListYearsOpen_T[r],meanListYearsOpen_T[r],stdListYearsOpen_T[r]])
-	womenWriter.writerow([[r],fedListYearsWomen_T[r],meanListYearsWomen_T[r],stdListYearsWomen_T[r]])
+		womenWriter.writerow([i+1,condition_federationObjects[i].name,condition_federationObjects[i].dummy[2],condition_federationObjects[i].dummy[3]])
+	womenWriter.writerow([])
 
 ratedFedOpen.close()
 ratedFedWomen.close()
+disparityMetric.close()
+rated2021FedOpen.close()
+
+
+############################################################################
+# Top rated federations
