@@ -97,8 +97,10 @@ pathYM = glob.glob('../20*/*/')
 federationObjects = []						# list to store federation objects
 federationObjectsCheck = []					# list of names of federations stored as objects
 
-# List of months for extracting time
+# List of months and years for extracting time
 monthList = ['Jan','Feb','March','April','May','June','July','Aug','Sep','Oct','Nov','Dec']
+yearList = ['2012','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021']
+intYearList = [2012,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021]
 
 # Loop through all months
 for path in pathYM:
@@ -411,11 +413,13 @@ if not os.path.exists(topFedsDir):
 
 ratedFedOpen = open(topFedsDir + '/topRated.csv','w')
 rated2021FedOpen = open(topFedsDir + '/top2021Rated.csv','w')
+rated2021FedWomen = open(topFedsDir + '/top2021RatedWomen.csv','w')
 ratedFedWomen = open(topFedsDir + '/topRatedWomen.csv','w')
 disparityMetric = open(topFedsDir + '/disparityMetric.csv','w')
 
 openWriter = csv.writer(ratedFedOpen)
 open2021Writer = csv.writer(rated2021FedOpen)
+women2021Writer = csv.writer(rated2021FedWomen)
 womenWriter= csv.writer(ratedFedWomen)
 disparityWriter= csv.writer(disparityMetric)
 
@@ -425,10 +429,14 @@ disparityWriter.writerow(['Disparity between Average Rating of Top 10 Players (O
 openWriter.writerow(['Rank','Federation','Mean','Standard Deviation'])
 womenWriter.writerow(['Rank','Federation','Mean','Standard Deviation'])
 open2021Writer.writerow(['Top Federations by Average Rating of Top 10 Players (Dec 2021)'])
+women2021Writer.writerow(['Top Federations by Average Rating of Top 10 Female Players (Dec 2021)'])
 openWriter.writerow([])
 open2021Writer.writerow([])
+women2021Writer.writerow([])
 womenWriter.writerow([])
 disparityWriter.writerow([])
+open2021Writer.writerow(['Rank','Federation','Average (Open)','Average (Women)'])
+women2021Writer.writerow(['Rank','Federation','Average (Women)','Average (Open)'])
 
 # Loop through years and write to file
 for yrs in range(2012,2022):
@@ -491,8 +499,11 @@ for yrs in range(2012,2022):
 		openWriter.writerow([i+1,condition_federationObjects[i].name,condition_federationObjects[i].dummy[0],condition_federationObjects[i].dummy[2]])
 	openWriter.writerow([])
 
-	for fed_ in condition_federationObjects:
-		open2021Writer.writerow([i+1,fed_.name,fed_.dummy[0],fed_.dummy[2]])
+	if yrs == 2021:
+		number = 1
+		for fed_ in condition_federationObjects:
+			open2021Writer.writerow([number,fed_.name,fed_.dummy[0],fed_.dummy[2]])
+			number += 1
 
 
 	############################################################################
@@ -506,11 +517,143 @@ for yrs in range(2012,2022):
 		womenWriter.writerow([i+1,condition_federationObjects[i].name,condition_federationObjects[i].dummy[2],condition_federationObjects[i].dummy[3]])
 	womenWriter.writerow([])
 
+	if yrs == 2021:
+		number = 1
+		for fed_ in condition_federationObjects:
+			women2021Writer.writerow([number,fed_.name,fed_.dummy[2],fed_.dummy[1]])
+			number += 1
+
 ratedFedOpen.close()
 ratedFedWomen.close()
 disparityMetric.close()
 rated2021FedOpen.close()
-
+rated2021FedWomen.close()
 
 ############################################################################
-# Top rated federations
+# Federation Statistics
+
+federationDataDir = '../federationStatistics'
+if not os.path.exists(federationDataDir):
+	os.makedirs(federationDataDir)
+
+for fed_ in federationObjects:
+	fedDirectory = federationDataDir + '/' + fed_.name
+	if not os.path.exists(fedDirectory):
+		os.makedirs(fedDirectory)
+
+	############################################################################
+	# Junior players
+
+	juniorGames = open(fedDirectory + '/junior5games.csv','w')
+	juniorGrades = open(fedDirectory + '/junior5grades.csv','w')
+	juniorGamesWriter = csv.writer(juniorGames)
+	juniorGradesWriter = csv.writer(juniorGrades)
+	juniorGamesWriter.writerow(['Average Number of Games Played per Month by Top 5 Juniors'])
+	juniorGamesWriter.writerow([])
+	juniorGradesWriter.writerow(['Average Rating of Top 5 Juniors'])
+	juniorGradesWriter.writerow([])
+
+	yearList_count = [0,0,0,0,0,0,0,0,0,0,0]
+	gameList_count_boys = [0,0,0,0,0,0,0,0,0,0,0]
+	gameList_count_std_boys = [0,0,0,0,0,0,0,0,0,0,0]
+	ratingList_count_boys = [0,0,0,0,0,0,0,0,0,0,0]
+	ratingList_count_std_boys = [0,0,0,0,0,0,0,0,0,0,0]
+	gameList_count_girls = [0,0,0,0,0,0,0,0,0,0,0]
+	gameList_count_std_girls = [0,0,0,0,0,0,0,0,0,0,0]
+	ratingList_count_girls = [0,0,0,0,0,0,0,0,0,0,0]
+	ratingList_count_std_girls = [0,0,0,0,0,0,0,0,0,0,0]
+
+	# Loop over time and work out averages by each year
+	for t in range(len(fed_.time)):
+		# Find the year
+		year = int(fed_.time[t])
+
+		# Find index for each year
+		index_year = intYearList.index(year)
+
+		# Add counts and data to list
+		yearList_count[index_year] += 1
+		gameList_count_boys[index_year] += fed_.games_boys_top5_mean[t]
+		gameList_count_std_boys[index_year] += fed_.games_boys_top5_std[t]
+		gameList_count_girls[index_year] += fed_.games_girls_top5_mean[t]
+		gameList_count_std_girls[index_year] += fed_.games_girls_top5_std[t]
+		ratingList_count_boys[index_year] += fed_.rating_boys_top5_mean[t]
+		ratingList_count_std_boys[index_year] += fed_.rating_boys_top5_std[t]
+		ratingList_count_girls[index_year] += fed_.rating_girls_top5_mean[t]
+		ratingList_count_std_girls[index_year] += fed_.rating_girls_top5_std[t]
+
+	# Find average
+	for y in range(len(yearList_count)):
+		gameList_count_boys[y] /= yearList_count[y]
+		gameList_count_girls[y] /= yearList_count[y]
+		ratingList_count_boys[y] /= yearList_count[y]
+		ratingList_count_girls[y] /= yearList_count[y]
+		gameList_count_std_boys[y] /= yearList_count[y]
+		gameList_count_std_girls[y] /= yearList_count[y]
+		ratingList_count_std_boys[y] /= yearList_count[y]
+		ratingList_count_std_girls[y] /= yearList_count[y]
+
+	# Write to file
+
+	# Year
+	juniorGamesWriter.writerow(yearList)
+	juniorGradesWriter.writerow(yearList)
+	# Average number of games
+	juniorGamesWriter.writerow(['Games (boys)',gameList_count_boys])
+	juniorGamesWriter.writerow(['Games s.d. (boys)',gameList_count_std_boys])
+	juniorGamesWriter.writerow(['Games (girls)',gameList_count_girls])
+	juniorGamesWriter.writerow(['Games s.d. (girls)',gameList_count_std_girls])
+	# Average ratings
+	juniorGradesWriter.writerow(['Rating (boys)',ratingList_count_boys])
+	juniorGradesWriter.writerow(['Rating s.d. (boys)',ratingList_count_std_boys])
+	juniorGradesWriter.writerow(['Rating (girls)',ratingList_count_girls])
+	juniorGradesWriter.writerow(['Rating s.d. (girls)',ratingList_count_std_girls])
+
+	# Plot
+	# Number 1800 women
+	plt.ylabel('Games')
+	plt.xlabel('Year')
+	plt.plot(intYearList,gameList_count_boys,label='M',color=[0, 145./255., 181./255.])
+	plt.plot(intYearList,gameList_count_boys,label='F',color=[244./255., 170./255., 0])
+	plt.savefig('JuniorGames')
+	plt.show()
+
+
+	juniorGames.close()
+	juniorGrades.close()
+
+
+
+
+
+
+
+
+		#
+		# Add year to array and consider previous year complete
+
+
+
+
+
+	# Ratings of top 5 girls and boys
+	# Plot rating Boys raw
+	# Plot ratings Girls raw
+	# Individually and on the same graph
+	# y-axis 1500 - 2700
+	# include only juniors with average rating > 1500
+
+	# Write to file
+	# Find number of games per year
+
+	# Number of games  of top 5 girls and boys
+	# on the same graph
+	# y-axis 1500 - 2700
+	# include only juniors with average rating > 1500
+
+	# Write to file
+
+	############################################################################
+	# Disparity / Gap between men and womens chess
+
+	# Difference between average_10 - average_women_10
